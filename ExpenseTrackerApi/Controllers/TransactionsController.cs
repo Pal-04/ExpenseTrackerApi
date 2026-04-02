@@ -54,6 +54,14 @@ namespace ExpenseTrackerApi.Controllers
             var transactions = await dbContext.Transactions
                 .Where(t => t.UserId == userId)
                 .Include(t => t.Category)
+                .Select(t => new TransactionResponseDto
+                { 
+                    TransactionId = t.TransactionId,
+                    Amount = t.Amount,
+                    Type = t.Type,
+                    CategoryName = t.Category!.Name,
+                    Date = t.Date
+                })
                 .ToListAsync();
 
             return Ok(transactions);

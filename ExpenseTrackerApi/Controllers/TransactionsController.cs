@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ExpenseTrackerApi.Data;
+using ExpenseTrackerApi.DTOs;
+using ExpenseTrackerApi.Models;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 
 namespace ExpenseTrackerApi.Controllers
@@ -17,6 +21,27 @@ namespace ExpenseTrackerApi.Controllers
                 Message = "Authorized user",
                 UserId = userId
             });
+        }
+
+        [Authorize]
+        [HttpPost]
+        public async Task<IActionResult> AddTransaction([FromBody] CreateTransactionDto dto, [FromServices] AppDbContext _dbContext)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var transaction = new Transaction
+            {
+                Amount = dto.Amount,
+                Type = dto.Type,
+                CategoryId = dto.CategoryId,
+                UserId = userId,
+                Date = DateTime.Now
+            };
+
+            _dbContext.Transactions.Add(transaction);
+            await _dbContext.SaveChangesAsync();
+
+            return Ok(transaction);
         }
     }
 }

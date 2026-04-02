@@ -3,6 +3,7 @@ using ExpenseTrackerApi.DTOs;
 using ExpenseTrackerApi.Models;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
 namespace ExpenseTrackerApi.Controllers
@@ -25,7 +26,7 @@ namespace ExpenseTrackerApi.Controllers
 
         [Authorize]
         [HttpPost]
-        public async Task<IActionResult> AddTransaction([FromBody] CreateTransactionDto dto, [FromServices] AppDbContext _dbContext)
+        public async Task<IActionResult> AddTransaction([FromBody] CreateTransactionDto dto, [FromServices] AppDbContext dbContext)
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
@@ -38,10 +39,24 @@ namespace ExpenseTrackerApi.Controllers
                 Date = DateTime.Now
             };
 
-            _dbContext.Transactions.Add(transaction);
-            await _dbContext.SaveChangesAsync();
+            dbContext.Transactions.Add(transaction);
+            await dbContext.SaveChangesAsync();
 
             return Ok(transaction);
+        }
+
+        [Authorize]
+        [HttpGet]
+        public async Task<IActionResult> GetTransactions([FromServices] AppDbContext dbContext)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var transactions = await dbContext.Transactions
+                .Where(t => t.UserId == userId)
+                .Include(t => t.Category)
+                .ToListAsync();
+
+            return Ok(transactions);
         }
     }
 }

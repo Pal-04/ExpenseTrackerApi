@@ -1,6 +1,7 @@
 ﻿using BCrypt.Net;
 using ExpenseTrackerApi.Data;
 using ExpenseTrackerApi.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
@@ -17,9 +18,11 @@ namespace ExpenseTrackerApi.Services
             _dbContext = dbContext;
         }
 
-        public string Register(string email, string password)
+        public async Task<string> RegisterAsync(string email, string password)
         {
-            if (_dbContext.Users.Any(u => u.Email == email))
+            var userExists = await _dbContext.Users.AnyAsync(u => u.Email == email);
+
+            if (userExists)
             {
                 return "User already exists";
             }
@@ -32,15 +35,15 @@ namespace ExpenseTrackerApi.Services
                 PasswordHash = hasedPassword,
             };
 
-            _dbContext.Users.Add(user);
-            _dbContext.SaveChanges();
+            await _dbContext.Users.AddAsync(user);
+            await _dbContext.SaveChangesAsync();
 
             return "User registered successfully";
         }
 
-        public User ? Login(string email, string password)
+        public async Task<User?> LoginAsync(string email, string password)
         {
-            var user = _dbContext.Users.FirstOrDefault(u => u.Email == email);
+            var user = await _dbContext.Users.FirstOrDefaultAsync(u => u.Email == email);
 
             if (user == null)
             {

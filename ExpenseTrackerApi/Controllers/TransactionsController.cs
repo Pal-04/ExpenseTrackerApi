@@ -54,9 +54,66 @@ namespace ExpenseTrackerApi.Controllers
             var transactions = await dbContext.Transactions
                 .Where(t => t.UserId == userId)
                 .Include(t => t.Category)
+                .Select(t => new TransactionResponseDto
+                { 
+                    TransactionId = t.TransactionId,
+                    Amount = t.Amount,
+                    Type = t.Type,
+                    CategoryName = t.Category!.Name,
+                    Date = t.Date
+                })
                 .ToListAsync();
 
             return Ok(transactions);
+        }
+
+        [Authorize]
+        [HttpPut("{id}")]
+        public async Task<IActionResult> UpdateTransaction(int id, [FromBody] UpdateTransactionDto dto, [FromServices] AppDbContext dbContext)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var transaction = await dbContext.Transactions.FirstOrDefaultAsync(t => t.TransactionId == id && t.UserId == userId);
+
+            if (transaction == null)
+            {
+                return NotFound("Transaction not found");
+            }
+
+            var categoryExists = await dbContext.Categories.AnyAsync(c => c.CategoryId == dto.CategoryId);
+
+            if (!categoryExists)
+            {
+                return BadRequest("Invalid CategoryId");
+            }
+
+            transaction.Amount = dto.Amount;
+            transaction.Type = dto.Type;
+            transaction.CategoryId = dto.CategoryId;
+
+            await dbContext.SaveChangesAsync();
+
+            return Ok("Transaction updated successfully");
+        }
+
+        [Authorize]
+        [HttpDelete("{id}")]
+        public async Task<IActionResult> DeleteTransaction(int id, [FromServices] AppDbContext dbContext)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var transaction = await dbContext.Transactions
+                .FirstOrDefaultAsync(t => t.TransactionId == id && t.UserId == userId);
+
+            if (transaction == null)
+            {
+                return NotFound("Transaction not found");
+            }
+
+            dbContext.Transactions.Remove(transaction);
+            dbContext.SaveChanges();
+
+            return Ok("Transaction deleted successfully");
         }
     }
 }

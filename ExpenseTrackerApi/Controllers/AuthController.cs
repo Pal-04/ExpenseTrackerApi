@@ -19,17 +19,17 @@ namespace ExpenseTrackerApi.Controllers
         }
 
         [HttpPost("register")]
-        public IActionResult Register(RegisterDto dto)
+        public async Task<IActionResult> Register(RegisterDto dto)
         {
-            var result = _authService.Register(dto.Email, dto.Password);
+            var result = await _authService.RegisterAsync(dto.Email, dto.Password);
 
             return Ok(result);
         }
 
         [HttpPost("login")]
-        public IActionResult Login(LoginDto dto)
+        public async Task<IActionResult> Login(LoginDto dto)
         {
-            var user = _authService.Login(dto.Email, dto.Password);
+            var user = await _authService.LoginAsync(dto.Email, dto.Password);
 
             if (user == null)
             {

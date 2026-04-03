@@ -30,6 +30,18 @@ namespace ExpenseTrackerApi.Controllers
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
+            var category = await dbContext.Categories.FirstOrDefaultAsync(c => c.CategoryId == dto.CategoryId);
+
+            if (category == null)
+            {
+                return BadRequest("Invalid category");
+            }
+
+            if (category.Type != dto.Type)
+            {
+                return BadRequest("Category type mismatch");
+            }
+
             var transaction = new Transaction
             {
                 Amount = dto.Amount,

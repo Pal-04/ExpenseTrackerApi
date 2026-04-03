@@ -115,5 +115,27 @@ namespace ExpenseTrackerApi.Controllers
 
             return Ok("Transaction deleted successfully");
         }
+
+        [Authorize]
+        [HttpGet("summary")]
+        public async Task<IActionResult> GetSummary([FromServices] AppDbContext dbContext)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var transactions = await dbContext.Transactions.Where(t => t.UserId == userId).ToListAsync();
+
+            var totalIncome = transactions.Where(t => t.Type == "Income").Sum(t => t.Amount);
+
+            var totalExpense = transactions.Where(t => t.Type == "Expense").Sum(t => t.Amount);
+
+            var balance = totalIncome - totalExpense;
+
+            return Ok(new 
+            {
+                TotalIncome = totalIncome,
+                TotalExpense = totalExpense,
+                Balance = balance
+            });
+        }
     }
 }

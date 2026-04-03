@@ -30,6 +30,18 @@ namespace ExpenseTrackerApi.Controllers
         {
             var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
 
+            var category = await dbContext.Categories.FirstOrDefaultAsync(c => c.CategoryId == dto.CategoryId);
+
+            if (category == null)
+            {
+                return BadRequest("Invalid category");
+            }
+
+            if (category.Type != dto.Type)
+            {
+                return BadRequest("Category type mismatch");
+            }
+
             var transaction = new Transaction
             {
                 Amount = dto.Amount,
@@ -114,6 +126,28 @@ namespace ExpenseTrackerApi.Controllers
             dbContext.SaveChanges();
 
             return Ok("Transaction deleted successfully");
+        }
+
+        [Authorize]
+        [HttpGet("summary")]
+        public async Task<IActionResult> GetSummary([FromServices] AppDbContext dbContext)
+        {
+            var userId = int.Parse(User.FindFirst(ClaimTypes.NameIdentifier)!.Value);
+
+            var transactions = await dbContext.Transactions.Where(t => t.UserId == userId).ToListAsync();
+
+            var totalIncome = transactions.Where(t => t.Type == "Income").Sum(t => t.Amount);
+
+            var totalExpense = transactions.Where(t => t.Type == "Expense").Sum(t => t.Amount);
+
+            var balance = totalIncome - totalExpense;
+
+            return Ok(new 
+            {
+                TotalIncome = totalIncome,
+                TotalExpense = totalExpense,
+                Balance = balance
+            });
         }
     }
 }
